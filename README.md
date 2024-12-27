@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/4b8cf875-9c5d-494f-967b-e2cc838260df)# Library Management System
+# Library Management System
 
 ## Project Overview
 
