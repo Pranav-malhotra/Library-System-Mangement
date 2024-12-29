@@ -408,7 +408,28 @@ GROUP BY 1, 2
 
 **Task 18: Identify Members Issuing High-Risk Books**  
 Write a query to identify members who have issued books more than twice with the status "damaged" in the books table. Display the member name, book title, and the number of times they've issued damaged books.    
-
+```sql
+SELECT 
+    m.member_name,
+    i.issued_book_name,
+    COUNT(r.book_quality) AS damaged_count
+FROM 
+    issued_status AS i
+JOIN 
+    return_status AS r
+ON 
+    i.issued_id = r.issued_id
+JOIN 
+    members AS m
+ON 
+    i.issued_member_id = m.member_id
+WHERE 
+    r.book_quality = 'damaged'
+GROUP BY 
+    m.member_name, i.issued_book_name
+HAVING 
+    damaged_count > 1;
+```
 
 **Task 19: Stored Procedure**
 Objective:
