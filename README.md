@@ -499,6 +499,32 @@ Description: Write a CTAS query to create a new table that lists each member and
     Member ID
     Number of overdue books
     Total fines
+```sql
+CREATE TABLE overdue_books AS
+SELECT 
+    m.member_id,
+    COUNT(CASE WHEN r.return_date IS NULL AND DATEDIFF(CURRENT_DATE(), i.issued_date) > 30 THEN 1 END) AS overdue_books_count,
+    SUM(CASE WHEN r.return_date IS NULL AND DATEDIFF(CURRENT_DATE(), i.issued_date) > 30 
+             THEN (DATEDIFF(CURRENT_DATE(), i.issued_date) - 30) * 0.50 ELSE 0 END) AS total_fines,
+    COUNT(i.issued_id) AS total_books_issued
+FROM 
+    issued_status AS i
+LEFT JOIN 
+    return_status AS r
+ON 
+    i.issued_id = r.issued_id
+JOIN 
+    members AS m
+ON 
+    i.issued_member_id = m.member_id
+GROUP BY 
+    m.member_id
+ORDER BY 
+    m.member_id;
+
+select * from overdue_books;
+ 
+```
 
 
 
