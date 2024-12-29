@@ -278,38 +278,35 @@ Write a query to update the status of books in the books table to "Yes" when the
 
 ```sql
 
-CREATE OR REPLACE PROCEDURE add_return_records(p_return_id VARCHAR(10), p_issued_id VARCHAR(10), p_book_quality VARCHAR(10))
-LANGUAGE plpgsql
-AS $$
-
-DECLARE
-    v_isbn VARCHAR(50);
-    v_book_name VARCHAR(80);
-    
+CREATE DEFINER=`root`@`localhost` PROCEDURE `add_return_records`(in p_return_id varchar(10),in p_issued_id varchar(10),p_book_quality varchar(10))
 BEGIN
-    -- all your logic and code
-    -- inserting into returns based on users input
-    INSERT INTO return_status(return_id, issued_id, return_date, book_quality)
-    VALUES
-    (p_return_id, p_issued_id, CURRENT_DATE, p_book_quality);
+	DECLARE v_isbn VARCHAR(50);
+    DECLARE v_book_name VARCHAR(80);
 
+ -- Insert a new record into return_status
+    INSERT INTO return_status(return_id, issued_id, return_date, book_quality)
+    VALUES (p_return_id, p_issued_id, CURDATE(), p_book_quality);
+    
+     -- Retrieve the book ISBN and name associated with the issued_id
     SELECT 
         issued_book_isbn,
         issued_book_name
-        INTO
-        v_isbn,
+    INTO 
+        v_isbn, 
         v_book_name
-    FROM issued_status
-    WHERE issued_id = p_issued_id;
-
+    FROM 
+        issued_status
+    WHERE 
+        issued_id = p_issued_id;
+        
+	 -- Update the book status to 'yes' in the books table
     UPDATE books
     SET status = 'yes'
     WHERE isbn = v_isbn;
-
-    RAISE NOTICE 'Thank you for returning the book: %', v_book_name;
     
-END;
-$$
+    -- Output a message to indicate successful return
+    SELECT CONCAT('Thank you for returning the book: ', v_book_name) AS message;
+END
 
 
 -- Testing FUNCTION add_return_records
@@ -443,42 +440,37 @@ If the book is not available (status = 'no'), the procedure should return an err
 
 ```sql
 
-CREATE OR REPLACE PROCEDURE issue_book(p_issued_id VARCHAR(10), p_issued_member_id VARCHAR(30), p_issued_book_isbn VARCHAR(30), p_issued_emp_id VARCHAR(10))
-LANGUAGE plpgsql
-AS $$
-
-DECLARE
--- all the variabable
-    v_status VARCHAR(10);
-
+CREATE DEFINER=`root`@`localhost` PROCEDURE `issue_book`( IN p_issued_id VARCHAR(10),
+    IN p_issued_member_id VARCHAR(10),
+    IN p_issued_book_isbn VARCHAR(25),
+    IN p_issued_emp_id VARCHAR(10))
 BEGIN
--- all the code
-    -- checking if book is available 'yes'
-    SELECT 
-        status 
-        INTO
-        v_status
+	DECLARE v_status VARCHAR(10);
+
+    -- Check if the book is available
+    SELECT status 
+    INTO v_status
     FROM books
     WHERE isbn = p_issued_book_isbn;
+    
+     IF v_status = 'yes' THEN
+        -- Insert into issued_status
+        INSERT INTO issued_status (issued_id, issued_member_id, issued_date, issued_book_isbn, issued_emp_id)
+        VALUES (p_issued_id, p_issued_member_id, CURDATE(), p_issued_book_isbn, p_issued_emp_id);
 
-    IF v_status = 'yes' THEN
-
-        INSERT INTO issued_status(issued_id, issued_member_id, issued_date, issued_book_isbn, issued_emp_id)
-        VALUES
-        (p_issued_id, p_issued_member_id, CURRENT_DATE, p_issued_book_isbn, p_issued_emp_id);
-
+        -- Update the book status to 'no'
         UPDATE books
-            SET status = 'no'
+        SET status = 'no'
         WHERE isbn = p_issued_book_isbn;
 
-        RAISE NOTICE 'Book records added successfully for book isbn : %', p_issued_book_isbn;
-
+        -- Output success message
+        SELECT CONCAT('Book records added successfully for book isbn: ', p_issued_book_isbn) AS message;
 
     ELSE
-        RAISE NOTICE 'Sorry to inform you the book you have requested is unavailable book_isbn: %', p_issued_book_isbn;
+        -- Output unavailable message
+        SELECT CONCAT('Sorry to inform you the book you have requested is unavailable. Book isbn: ', p_issued_book_isbn) AS message;
     END IF;
-END;
-$$
+END
 
 -- Testing The function
 SELECT * FROM books;
